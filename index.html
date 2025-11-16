@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>0.25% Mobile Friendly Calculator</title>
+  <style>
+    :root{
+      --bg: #F3EDF2;
+      --card: #fff;
+      --text: #000000;
+      --accent: #fe6100;
+      --accent-hover: #e55800;
+      --shadow: 0 8px 28px rgba(254,97,0,0.18);
+      --radius: 18px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial}
+    body{background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+
+    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px}
+    .card{width:100%;max-width:460px;background:var(--card);border-radius:22px;padding:18px;margin:8px;box-shadow:0 6px 30px rgba(15,23,36,0.06)}
+
+    .title{text-align:center;font-size:20px;font-weight:600;margin-bottom:6px}
+    .subtitle{text-align:center;font-size:13px;color:#5b6770;margin-bottom:14px}
+
+    .field{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+    input[type="text"], select{padding:14px 14px;border-radius:14px;border:1px solid #ececec;font-size:18px;outline:none}
+    input[type="text"]::placeholder{color:#bdbdbd}
+
+    .result{background:#fbfbfd;border:1px solid #f0f0f3;padding:14px;border-radius:14px}
+    .row{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
+    .label{color:#444;font-size:14px}
+    .value{font-weight:600;font-size:16px}
+    .final{font-size:18px}
+
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px;border-radius:14px;border:0;font-weight:600;font-size:16px;cursor:pointer}
+    .btn-primary{background:var(--accent);color:var(--text);box-shadow:var(--shadow);width:100%;}
+    .btn-primary:active{transform:translateY(1px)}
+    .btn-primary:hover{background:var(--accent-hover);box-shadow:0 12px 34px rgba(229,88,0,0.18)}
+
+    .btn-ghost{background:transparent;border:1px solid #e9e9e9;color:var(--text);width:100%;padding:12px;border-radius:14px}
+
+    .small{font-size:13px;color:#6b7280}
+
+    footer{margin-top:12px;text-align:center;font-size:12px;color:#7b8790}
+
+    @media (max-width:420px){
+      .card{padding:14px;border-radius:16px}
+      input[type="text"], select{font-size:16px;padding:12px}
+      .btn{padding:12px;font-size:15px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <main class="card" role="main" aria-labelledby="calcTitle">
+      <h1 id="calcTitle" class="title">0.25% Calculator</h1>
+      <p class="subtitle">Enter any amount — this will subtract exactly 0.25% and show precise results. Mobile-first, touch-friendly.</p>
+
+      <div class="field">
+        <label class="small">Amount</label>
+        <input id="amount" type="text" inputmode="decimal" placeholder="Enter amount" aria-label="Amount input">
+      </div>
+
+      <div class="field">
+        <label class="small">Display precision</label>
+        <select id="precision" aria-label="Rounding precision">
+          <option value="2">2 decimal places</option>
+          <option value="full">Full precision</option>
+          <option value="int">Nearest integer</option>
+        </select>
+      </div>
+
+      <div class="result" aria-live="polite">
+        <div class="row"><div class="label">Original amount</div><div id="orig" class="value">0</div></div>
+        <div class="row"><div class="label">0.25% of amount (0.0025 × amount)</div><div id="percent" class="value">0</div></div>
+        <div class="row" style="margin-top:8px"><div class="label final">Final after subtract</div><div id="final" class="value final">0</div></div>
+      </div>
+
+      <div style="height:12px"></div>
+
+      <button id="copyBtn" class="btn btn-primary">Copy results</button>
+      <button id="resetBtn" class="btn btn-ghost" style="margin-top:10px">Reset</button>
+
+      <footer>Enter any value above to calculate</footer>
+    </main>
+  </div>
+
+  <script>
+    function parseNumber(str){
+      if (!str) return 0;
+      const cleaned = String(str).replace(/[,\s]/g, '').trim();
+      if (cleaned === '') return 0;
+      const n = Number(cleaned);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function formatNumber(n, precision){
+      if (!isFinite(n)) return '0';
+      if (precision === 'full') return String(n);
+      if (precision === 'int') return String(Math.round(n));
+      const fixed = Number(n).toFixed(2);
+      return Number(fixed).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+    }
+
+    const amountEl = document.getElementById('amount');
+    const precisionEl = document.getElementById('precision');
+    const origEl = document.getElementById('orig');
+    const percentEl = document.getElementById('percent');
+    const finalEl = document.getElementById('final');
+    const copyBtn = document.getElementById('copyBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    function computeAndRender(){
+      const raw = parseNumber(amountEl.value || '0');
+      const percentRaw = (raw * 25) / 10000;
+      const finalRaw = raw - percentRaw;
+
+      const precision = precisionEl.value;
+      origEl.textContent = formatNumber(raw, precision);
+      percentEl.textContent = formatNumber(percentRaw, precision);
+      finalEl.textContent = formatNumber(finalRaw, precision);
+
+      copyBtn.setAttribute('data-sample',
+        `Amount: ${formatNumber(raw, precision)} | 0.25%: ${formatNumber(percentRaw, precision)} | Final: ${formatNumber(finalRaw, precision)}`
+      );
+    }
+
+    let debounceTimer = null;
+    function scheduleCompute(){
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(computeAndRender, 160);
+    }
+
+    amountEl.addEventListener('input', scheduleCompute);
+    precisionEl.addEventListener('change', computeAndRender);
+
+    copyBtn.addEventListener('click', () => {
+      const text = copyBtn.getAttribute('data-sample') || '';
+      navigator.clipboard.writeText(text).then(() => {
+        const prev = copyBtn.textContent;
+        copyBtn.textContent = 'Copied ✓';
+        setTimeout(() => copyBtn.textContent = prev, 1400);
+      });
+    });
+
+    resetBtn.addEventListener('click', () => {
+      amountEl.value = '';
+      precisionEl.value = '2';
+      computeAndRender();
+    });
+
+    computeAndRender();
+  </script>
+</body>
+</html>
